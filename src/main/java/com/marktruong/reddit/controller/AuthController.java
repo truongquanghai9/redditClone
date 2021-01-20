@@ -29,7 +29,7 @@ public class AuthController {
 		return new ResponseEntity<>("User Registration Successful", HttpStatus.OK);
 		}
 		else {
-			return new ResponseEntity<>("Username already exist!", HttpStatus.CONFLICT);
+			return new ResponseEntity<>("User	name already exist!", HttpStatus.CONFLICT);
 		}
 	}
 	@GetMapping("/accountVerification/{token}")
