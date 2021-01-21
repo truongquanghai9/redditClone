@@ -1,6 +1,7 @@
 package com.marktruong.reddit.security;
 
 
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.KeyStore;
@@ -10,9 +11,12 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.time.Instant;
+import java.util.Date;
 
 import javax.annotation.PostConstruct;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Service;
@@ -29,6 +33,9 @@ public class JwtProvider {
 	
 	private KeyStore keyStore;
 	
+	@Value("${jwt.expiration.time}")
+	private Long jwtExpirationTimeInMillis;
+	
 	@PostConstruct
 	public void init() {
 		try {
@@ -42,10 +49,24 @@ public class JwtProvider {
 	
 	public String generateToken(Authentication authentication) {
 		User principal = (User) authentication.getPrincipal();
-		
+		log.info(">>>>>>principal.getUsername() " + principal.getUsername());
+		log.info(">>>>>>Instant.now() " + Instant.now());
+		log.info(">>>> Date.from(Instant.now()) " + Date.from(Instant.now()));
 		return Jwts.builder().setSubject(principal.getUsername())
+							.setIssuedAt(Date.from(Instant.now()))
 							.signWith(getPrivateKey())
+							.setExpiration(Date.from(Instant.now().plusMillis(jwtExpirationTimeInMillis)))
 							.compact();
+	
+	}
+	
+	public String generateTokenWithUsername(String username) {
+		return Jwts.builder()
+				.setSubject(username)
+				.setIssuedAt(Date.from(Instant.now()))
+				.signWith(getPrivateKey())
+				.setExpiration(Date.from(Instant.now().plusMillis(jwtExpirationTimeInMillis)))
+				.compact();
 	}
 	
 	private PrivateKey getPrivateKey() {
@@ -72,6 +93,9 @@ public class JwtProvider {
 		Claims claims = Jwts.parserBuilder().setSigningKey(getPublicKey()).build().parseClaimsJws(token).getBody();
 		log.info(">>>>>>>>>claims.getSubject() : " + claims.getSubject());
 		return claims.getSubject();
+	}
+	public Long getJwtExpirationTimeInMillis() {
+		return jwtExpirationTimeInMillis;
 	}
 }
   
