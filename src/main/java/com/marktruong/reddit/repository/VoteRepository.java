@@ -13,7 +13,7 @@ import com.marktruong.reddit.model.Vote;
 @Repository
 public interface VoteRepository extends JpaRepository<Vote, Long> {
 
-	Optional<List<Vote>> findTop2ByPostAndUserOrderByVoteIdDesc(Post post, User currentUser);
+	Optional<Vote> findTopByPostAndUserOrderByVoteIdDesc(Post post, User currentUser);
 
 		
 }

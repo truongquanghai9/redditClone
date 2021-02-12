@@ -14,6 +14,6 @@ import lombok.NoArgsConstructor;
 public class AuthenticationResponse {
 	private String authenticationToken;
 	private String refreshToken;
-	private Instant expiresAt;
+	private Long expiresAt;
 	private String username;
 	}

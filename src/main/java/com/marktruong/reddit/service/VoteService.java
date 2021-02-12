@@ -30,10 +30,24 @@ public class VoteService {
 		Post post = postRepository.findById(voteDto.getPostId())
 						.orElseThrow(() -> new PostNotFoundException("Post id not found " + voteDto.getPostId()));
 		
-		Optional<List<Vote>> voteByPostAndUser = 
-				voteRepository.findTop2ByPostAndUserOrderByVoteIdDesc(post, authService.getCurrentUser());
+		Optional<Vote> voteByPostAndUser = 
+				voteRepository.findTopByPostAndUserOrderByVoteIdDesc(post, authService.getCurrentUser());
 		
-		if (voteByPostAndUser.isPresent() && voteByPostAndUser.get().size() < 2) {
+		if (voteByPostAndUser.isPresent()) {
+			if (voteByPostAndUser.get().getVoteType().equals(voteDto.getVoteType())) {
+				checkVoteTypeAndAddToPostForSameVoteType(voteDto, post);
+				postRepository.save(post);
+				voteRepository.delete(voteByPostAndUser.get());
+				return;
+			}
+			else {
+				checkVoteTypeAndAddToPostForDifferentVoteType(voteDto,post);
+			}
+		} else {
+			checkVoteTypeAndAddToPostForNotPresent(voteDto,post);
+		}
+		/*
+		if (voteByPostAndUser.isPresent()) {
 			if (voteByPostAndUser.get().size() == 0) {
 				checkVoteTypeAndAddToPost(voteDto,post);
 				voteRepository.save(mapToVote(voteDto,post));
@@ -63,6 +77,11 @@ public class VoteService {
 		}
 		voteRepository.save(mapToVote(voteDto,post));
 		voteRepository.delete(voteByPostAndUser.get().get(1));
+		*/
+		voteRepository.save(mapToVote(voteDto,post));
+		if (voteByPostAndUser.isPresent()) {
+			voteRepository.delete(voteByPostAndUser.get());
+		}
 	}
 	
 	private Vote mapToVote(VoteDto voteDto, Post post) {
@@ -71,10 +90,26 @@ public class VoteService {
 					.post(post)
 					.build();
 	}
-	private void checkVoteTypeAndAddToPost(VoteDto voteDto, Post post) {
+	private void checkVoteTypeAndAddToPostForDifferentVoteType(VoteDto voteDto, Post post) {
+		if (VoteType.UPVOTE.equals(voteDto.getVoteType())) {
+			post.setVoteCount(post.getVoteCount() + 2);
+		} else if (VoteType.DOWNVOTE.equals(voteDto.getVoteType())) {
+			post.setVoteCount(post.getVoteCount() - 2);
+		}
+	}
+	private void checkVoteTypeAndAddToPostForSameVoteType(VoteDto voteDto, Post post) {
+		if (VoteType.UPVOTE.equals(voteDto.getVoteType())) {
+			post.setVoteCount(post.getVoteCount() - 1);
+		}
+		else if (VoteType.DOWNVOTE.equals(voteDto.getVoteType())) {
+			post.setVoteCount(post.getVoteCount() + 1);
+		}
+	}
+	private void checkVoteTypeAndAddToPostForNotPresent(VoteDto voteDto, Post post) {
 		if (VoteType.UPVOTE.equals(voteDto.getVoteType())) {
 			post.setVoteCount(post.getVoteCount() + 1);
-		} else if (VoteType.DOWNVOTE.equals(voteDto.getVoteType())) {
+		}
+		else if (VoteType.DOWNVOTE.equals(voteDto.getVoteType())) {
 			post.setVoteCount(post.getVoteCount() - 1);
 		}
 	}

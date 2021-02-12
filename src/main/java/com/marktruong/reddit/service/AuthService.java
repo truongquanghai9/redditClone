@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import javax.validation.Valid;
 
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -15,7 +16,6 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.marktruong.reddit.dto.AuthenticationResponse;
 import com.marktruong.reddit.dto.LoginRequest;
 import com.marktruong.reddit.dto.RefreshTokenRequest;
@@ -49,9 +49,10 @@ public class AuthService {
 	
 	public boolean signup(RegisterRequest registerRequest) {
 		
-		if (userRepository.findByUsername(registerRequest.getUsername()) != null) {
+		if ((userRepository.findByUsername(registerRequest.getUsername())).isPresent()) {
 			return false;
 		}
+
 		User user = new User();
 		user.setUsername(registerRequest.getUsername());
 		user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
@@ -101,7 +102,7 @@ public class AuthService {
 		String token = jwtProvider.generateToken(authenticate);
 		return AuthenticationResponse.builder().authenticationToken(token)
 				.refreshToken(refreshTokenService.generateRefreshToken().getToken())
-				.expiresAt(Instant.now().plusMillis(jwtProvider.getJwtExpirationTimeInMillis()))
+				.expiresAt((Instant.now().plusMillis(jwtProvider.getJwtExpirationTimeInMillis())).toEpochMilli())
 				.username(loginRequest.getUsername())
 				.build();
 	}	
@@ -110,11 +111,10 @@ public class AuthService {
 	@Transactional(readOnly=true)
 	public User getCurrentUser() {
 		Authentication loggedInUser = SecurityContextHolder.getContext().getAuthentication();
+		//org.springframework.security.core.userdetails.User user = (org.springframework.security.core.userdetails.User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+		
 		String username = loggedInUser.getName();
-		log.info(">>>>>>>username: " + username);
-		log.info(">>>>>>>getCredentails(): " + loggedInUser.getCredentials().toString());
-		log.info(">>>>>>>:getDetails(): " + loggedInUser.getDetails().toString());
-		log.info(">>>>>>>getPrincipal(): " + loggedInUser.getPrincipal());
+		 
 		return userRepository.findByUsername(username)
 							.orElseThrow(() -> new UsernameNotFoundException("Username not found - " + username));
 	}
@@ -126,8 +126,12 @@ public class AuthService {
 				.authenticationToken(token)
 				.refreshToken(refreshTokenRequest.getRefreshToken())
 				.username(refreshTokenRequest.getUsername())
-				.expiresAt(Instant.now().plusMillis(jwtProvider.getJwtExpirationTimeInMillis()))
+				.expiresAt((Instant.now().plusMillis(jwtProvider.getJwtExpirationTimeInMillis())).toEpochMilli())
 				.build();
 	}
-	
+	public boolean isLoggedIn() {
+		Authentication loggedInUser = SecurityContextHolder.getContext().getAuthentication();
+		
+		return !(loggedInUser instanceof AnonymousAuthenticationToken) && loggedInUser.isAuthenticated();
+	}
 }

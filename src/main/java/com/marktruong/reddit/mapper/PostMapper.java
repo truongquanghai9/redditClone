@@ -44,8 +44,8 @@ public abstract class PostMapper {
 	@Mapping(target="username", source="user.username")
     @Mapping(target = "commentCount", expression = "java(getCommentCount(post))")
     @Mapping(target = "duration", expression = "java(getDuration(post))")
-    //@Mapping(target = "upVote", expression = "java(isPostUpVoted(post))")
-    //@Mapping(target = "downVote", expression = "java(isPostDownVoted(post))")	
+    @Mapping(target = "upVote", expression = "java(isPostUpVoted(post))")
+    @Mapping(target = "downVote", expression = "java(isPostDownVoted(post))")	
 	public abstract PostResponse mapPostToPostResponse(Post post);
 	
 	
@@ -56,7 +56,7 @@ public abstract class PostMapper {
 	String getDuration(Post post) {
 		return TimeAgo.using(post.getCreatedDate().toEpochMilli());
 	}
-	/*
+ 
 	boolean isPostUpVoted(Post post) {
 		return checkVoteType(post,VoteType.UPVOTE);
 	}
@@ -71,6 +71,6 @@ public abstract class PostMapper {
 		}
 		return false;
 	}
-	*/
+	
 
 }
